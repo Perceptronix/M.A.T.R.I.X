@@ -1,0 +1,52 @@
+WORKERS: 4
+PRINT_FREQ: 20
+OUTPUT_DIR: 'output'
+LOG_DIR: 'log'
+
+MODEL:
+  NAME: 'pidnet_s'
+  PRETRAINED: 'pretrained_models/imagenet/PIDNet_S_ImageNet.pth.tar'
+  NUM_OUTPUTS: 2
+
+LOSS:
+  USE_OHEM: true
+  OHEMTHRES: 0.7
+  OHEMKEEP: 100000
+  BALANCE_WEIGHTS: [0.5, 0.5]
+  SB_WEIGHTS: 0.5
+
+DATASET:
+  DATASET: 'rellis'
+  ROOT: 'data'
+  NUM_CLASSES: 19
+  TRAIN_SET: 'Rellis_3D_image_split/train.lst'
+  TEST_SET: 'Rellis_3D_image_split/val.lst'
+
+TRAIN:
+  IMAGE_SIZE:
+    - 1024
+    - 1024
+  BASE_SIZE: 2048
+  FLIP: true
+  MULTI_SCALE: true
+  SCALE_FACTOR: 16
+  LR: 0.001
+  WD: 0.0001
+  MOMENTUM: 0.9
+  NESTEROV: true
+  BATCH_SIZE_PER_GPU: 2
+  BEGIN_EPOCH: 0
+  END_EPOCH: 100
+  EXTRA_EPOCH: 0
+  RESUME: false
+  OPTIMIZER: sgd
+  SHUFFLE: true
+  IGNORE_LABEL: -1
+
+TEST:
+  IMAGE_SIZE:
+    - 1920
+    - 1200
+  BASE_SIZE: 2048
+  BATCH_SIZE_PER_GPU: 1
+  FLIP_TEST: false

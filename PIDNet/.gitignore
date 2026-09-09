@@ -1,0 +1,34 @@
+# RELLIS-3D dataset
+data/Rellis-3D/
+
+# Keep the split manifests
+# data/Rellis_3D_image_split/*.lst
+
+# Model weights
+pretrained_models/**/*.pth
+pretrained_models/**/*.pth.tar
+pretrained_models/**/*.pt
+pretrained_models/**/*.ckpt
+
+# Training outputs
+output/
+outputs/
+runs/
+log/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# IDE / local environment
+.vscode/
+.idea/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
