@@ -1,5 +1,6 @@
 import os
 import cv2
+import torch
 import numpy as np
 from torch.utils import data
 
@@ -91,7 +92,7 @@ class Rellis(BaseDataset):
                     )[0],
                 })
 
-        self.class_weights = np.ones(self.num_classes, dtype=np.float32)
+        self.class_weights = torch.ones(self.num_classes, dtype=torch.float32,)
 
     def __len__(self):
         return len(self.files)
@@ -144,7 +145,7 @@ class Rellis(BaseDataset):
         else:
             image = self.input_transform(image)
             image = image.transpose((2, 0, 1))
-            label = label.astype(np.int64)
+            label = self.label_transform(label)
 
             edge = cv2.Canny(
                 label.astype(np.uint8),
@@ -152,5 +153,8 @@ class Rellis(BaseDataset):
                 1
             )
             edge = (edge > 0).astype(np.float32)
+
+        # CrossEntropyLoss requires int64 / Long class targets.
+        label = label.astype(np.int64, copy=False)
 
         return image.copy(), label.copy(), edge.copy(), np.array(size), item["name"]
