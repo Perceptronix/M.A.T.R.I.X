@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 
 # ---- CHANGE THESE 3 PATHS ----
-IMAGE = r"C:\Users\nande\OneDrive\Desktop\M.A.T.R.I.X\test.jpeg"
+IMAGE = r"C:\Users\nande\OneDrive\Desktop\M.A.T.R.I.X\test.jpg"
 WEIGHTS = r"C:\Users\nande\OneDrive\Desktop\M.A.T.R.I.X\PIDNet\output\rellis\pidnet_small_rellis\best.pt"
 OUTPUT = "segmented.png"
 

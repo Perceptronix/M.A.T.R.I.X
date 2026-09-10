@@ -1,4 +1,5 @@
 # RELLIS-3D dataset
+data/rellis-3d/
 data/Rellis-3D/
 
 # Keep the split manifests
@@ -16,6 +17,15 @@ outputs/
 runs/
 log/
 logs/
+*.pt
+*.pth
+*.pth.tar
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.cache
 
 # Python
 __pycache__/
