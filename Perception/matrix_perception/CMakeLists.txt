@@ -8,7 +8,10 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -36,6 +39,26 @@ ament_target_dependencies(perception_test_node
   rclcpp
 )
 
+
+add_executable(entropy_node
+  src/entropy_node.cpp
+)
+
+ament_target_dependencies(entropy_node
+  rclcpp
+  std_msgs
+)
+
+add_executable(traversability_costmap_node
+  src/traversability_costmap_node.cpp
+)
+
+ament_target_dependencies(traversability_costmap_node
+  rclcpp
+  std_msgs
+  nav_msgs
+)
+
 add_executable(stereo_test_publisher
   src/stereo_test_publisher.cpp
 )
@@ -59,7 +82,90 @@ ament_target_dependencies(camera_info_test_publisher
   sensor_msgs
 )
 
+add_executable(iakf_fusion_node
+  src/iakf_fusion_node.cpp
+)
+
+ament_target_dependencies(iakf_fusion_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+)
+
+target_link_libraries(iakf_fusion_node
+  Eigen3::Eigen
+)
+
 add_executable(ground_plane_node src/ground_plane_node.cpp)
+
+add_executable(elevation_grid_node
+  src/elevation_grid_node.cpp
+)
+
+ament_target_dependencies(elevation_grid_node
+  rclcpp
+  sensor_msgs
+  std_msgs
+  pcl_conversions
+)
+
+add_executable(roughness_node
+  src/roughness_node.cpp
+)
+
+add_executable(step_height_node
+  src/step_height_node.cpp
+)
+
+ament_target_dependencies(step_height_node
+  rclcpp
+  std_msgs
+)
+
+add_executable(gating_supervisor_node
+  src/gating_supervisor_node.cpp
+)
+
+ament_target_dependencies(gating_supervisor_node
+  rclcpp
+  std_msgs
+)
+
+add_executable(clearance_node
+  src/clearance_node.cpp
+)
+
+ament_target_dependencies(roughness_node
+  rclcpp
+  sensor_msgs
+  pcl_conversions
+)
+
+ament_target_dependencies(clearance_node
+  rclcpp
+  sensor_msgs
+  std_msgs
+  pcl_conversions
+)
+
+add_executable(terrain_test_publisher
+  src/terrain_test_publisher.cpp
+)
+
+ament_target_dependencies(terrain_test_publisher
+  rclcpp
+  sensor_msgs
+)
+
+add_executable(entropy_test_publisher
+  src/entropy_test_publisher.cpp
+)
+
+ament_target_dependencies(entropy_test_publisher
+  rclcpp
+  std_msgs
+)
+
 
 ament_target_dependencies(ground_plane_node
   rclcpp
@@ -82,6 +188,16 @@ install(TARGETS
   stereo_test_publisher
   camera_info_test_publisher
   ground_plane_node
+  elevation_grid_node
+  roughness_node
+  iakf_fusion_node
+  clearance_node
+  step_height_node
+  traversability_costmap_node
+  entropy_test_publisher
+  entropy_node
+  terrain_test_publisher
+  gating_supervisor_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
