@@ -2,7 +2,8 @@
 PIDNet-S RELLIS-3D training script.
 Reuses all existing infrastructure (models, datasets, criterion, utils).
 Adds: epoch-wise console reporting, num_workers=0 for Windows,
-      configurable epoch cap, and clean checkpoint saving.
+      configurable epoch cap, clean checkpoint saving,
+      and class-frequency-based inverse-sqrt weights for semantic CE loss.
 """
 
 import argparse
@@ -26,6 +27,55 @@ from configs import config, update_config
 from utils.criterion import CrossEntropy, OhemCrossEntropy, BondaryLoss
 from utils.function import train, validate
 from utils.utils import FullModel
+
+
+CLASS_NAMES = [
+    "void", "grass", "mud", "bush", "concrete", "sky",
+    "water", "puddle", "dirt", "gravel", "asphalt",
+    "building", "log", "person", "fence", "vehicle",
+    "object", "pole", "tree trunk",
+]
+
+
+def load_class_weights(weights_file: str, num_classes: int, logger) -> torch.Tensor:
+    """
+    Load pre-computed inverse-sqrt class weights from compute_class_weights.py output.
+    Falls back to uniform weights if file not found, with a clear warning.
+    Weights are float32 on CPU; moved to device by criterion internals.
+    """
+    if not os.path.isfile(weights_file):
+        logger.warning(
+            f"Class weights file not found: {weights_file}  "
+            f"-- falling back to uniform weights. "
+            f"Run compute_class_weights.py first."
+        )
+        return torch.ones(num_classes, dtype=torch.float32)
+
+    data = torch.load(weights_file, map_location="cpu")
+    weights = data["weights"].float()          # shape (19,)
+    counts  = data["counts"]                   # numpy int64 array
+
+    total = int(counts.sum())
+    logger.info("=" * 60)
+    logger.info("CLASS WEIGHTS (inverse-sqrt frequency, normalised)")
+    logger.info(f"  Source : {weights_file}")
+    logger.info(f"  Total valid training pixels: {total:,}")
+    logger.info(f"  {'ID':>3}  {'Class':<12}  {'Pixels':>14}  {'Freq':>10}  {'Weight':>8}")
+    logger.info("  " + "-" * 54)
+    for c in range(num_classes):
+        freq = counts[c] / max(total, 1)
+        name = CLASS_NAMES[c] if c < len(CLASS_NAMES) else f"cls{c}"
+        if counts[c] == 0:
+            logger.warning(f"  Class {c:>2} ({name}): ZERO pixels -> weight=0 (excluded from loss)")
+        logger.info(f"  {c:>3}  {name:<12}  {counts[c]:>14,}  {freq:>10.6f}  {weights[c]:>8.4f}")
+    logger.info("=" * 60)
+
+    assert weights.shape[0] == num_classes, \
+        f"Weight tensor has {weights.shape[0]} entries, expected {num_classes}"
+    assert not torch.isnan(weights).any(), "NaN in class weights"
+    assert not torch.isinf(weights).any(), "Inf in class weights"
+
+    return weights
 
 
 class Args:
@@ -117,21 +167,34 @@ def main(max_epochs: int = 5):
     logger.info(f"Train samples : {len(train_dataset)}  ({len(trainloader)} batches/epoch)")
     logger.info(f"Val   samples : {len(val_dataset)}")
 
+    # ── class weights (inverse-sqrt frequency from training split) ────────────
+    weights_file = os.path.join(output_dir, "class_weights.pt")
+    class_weights = load_class_weights(
+        weights_file, config.DATASET.NUM_CLASSES, logger
+    )
+    # criterion internals call .cuda() via nn.CrossEntropyLoss — pass CPU tensor;
+    # DataParallel/FullModel will keep it on device correctly.
+    # However nn.CrossEntropyLoss stores weight as a buffer, so we move it
+    # to CUDA explicitly so it matches the model device.
+    class_weights = class_weights.cuda()
+
     # ── criterion ─────────────────────────────────────────────────────────────
+    # Semantic loss: OhemCrossEntropy (or CrossEntropy) with class weights.
+    # Boundary loss and SB auxiliary loss are UNCHANGED.
     if config.LOSS.USE_OHEM:
         sem_criterion = OhemCrossEntropy(
             ignore_label=config.TRAIN.IGNORE_LABEL,
             thres=config.LOSS.OHEMTHRES,
             min_kept=config.LOSS.OHEMKEEP,
-            weight=train_dataset.class_weights,
+            weight=class_weights,          # ← inverse-sqrt frequency weights
         )
     else:
         sem_criterion = CrossEntropy(
             ignore_label=config.TRAIN.IGNORE_LABEL,
-            weight=train_dataset.class_weights,
+            weight=class_weights,          # ← inverse-sqrt frequency weights
         )
 
-    bd_criterion = BondaryLoss()
+    bd_criterion = BondaryLoss()           # unchanged
 
     model = FullModel(model, sem_criterion, bd_criterion)
     model = nn.DataParallel(model, device_ids=gpus).cuda()
@@ -162,6 +225,11 @@ def main(max_epochs: int = 5):
     metrics_log = []   # (epoch, val_loss, val_mIoU, gpu_mb)
 
     # ── resume from checkpoint if available ───────────────────────────────────
+    # NOTE on optimizer state and loss change:
+    # Changing class weights in CrossEntropyLoss does NOT affect the optimizer's
+    # momentum buffers (which track gradient history, not loss scale).
+    # It is safe to resume optimizer state — the new weights will shift the
+    # gradient magnitudes going forward, which is the intended effect.
     ckpt_path = os.path.join(output_dir, "checkpoint.pth.tar")
     if os.path.isfile(ckpt_path):
         checkpoint = torch.load(ckpt_path, map_location="cpu")
@@ -169,7 +237,12 @@ def main(max_epochs: int = 5):
         best_mIoU  = checkpoint["best_mIoU"]
         model.module.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
-        logger.info(f"Resumed from checkpoint at epoch {last_epoch}, best_mIoU={best_mIoU:.4f}")
+        logger.info(f"Resumed checkpoint : {ckpt_path}")
+        logger.info(f"  Starting epoch   : {last_epoch}")
+        logger.info(f"  Best mIoU so far : {best_mIoU:.4f}")
+        logger.info(f"  Loss change      : class-weighted CE now active (optimizer state preserved)")
+    else:
+        logger.info("No checkpoint found — training from scratch.")
 
     logger.info(f"epoch_iters={epoch_iters}  num_iters={num_iters}")
     logger.info(f"LR={config.TRAIN.LR}  batch={batch_size}  ignore={config.TRAIN.IGNORE_LABEL}")
