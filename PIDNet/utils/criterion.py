@@ -66,6 +66,10 @@ class OhemCrossEntropy(nn.Module):
         pixel_losses = self.criterion(score, target).contiguous().view(-1)
         mask = target.contiguous().view(-1) != self.ignore_label
 
+        # Guard: if all pixels are ignored return zero loss
+        if mask.sum() == 0:
+            return pixel_losses.sum() * 0.0
+
         tmp_target = target.clone()
         tmp_target[tmp_target == self.ignore_label] = 0
         pred = pred.gather(1, tmp_target.unsqueeze(1))
