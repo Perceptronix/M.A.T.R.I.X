@@ -15,6 +15,7 @@
   <exec_depend>ugv_sim</exec_depend>
   <exec_depend>matrix_perception</exec_depend>
   <exec_depend>matrix_semantic</exec_depend>
+  <exec_depend>matrix_navigation</exec_depend>
   <exec_depend>matrix_dashboard</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <export>
