@@ -1,5 +1,7 @@
 # M.A.T.R.I.X — Autonomous Off-Road UGV (ROS 2 Jazzy + Gazebo Harmonic)
 
+*Mathematical Autonomous Terrain Reasoning and Intelligent eXecution*
+
 A colcon workspace for a multi-member autonomous ground-vehicle project:
 Gazebo simulation, LIDAR/stereo perception, entropy-gated semantic
 segmentation, Hybrid A*/DWA/CBF navigation, and a real-time web dashboard.
