@@ -1,0 +1,131 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Show Names: true
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Description Topic:
+        Value: /robot_description
+      Enabled: true
+    # Real state-estimation output (Member-2's own IAKF-style yaw fusion +
+    # odom pass-through, matrix_perception/state_estimation_node.cpp) --
+    # never Gazebo ground truth.
+    - Class: rviz_default_plugins/Odometry
+      Name: EstimatedPose
+      Topic:
+        Value: /state/estimated
+      Shape: Arrow
+      Keep: 1
+      Enabled: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: LidarPoints
+      Topic:
+        Value: /lidar/points
+        Reliability Policy: Best Effort
+      Style: Points
+      Size (Pixels): 2
+      Enabled: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Obstacles
+      Topic:
+        Value: /perception/obstacles
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+        History Policy: Keep Last
+      Style: Points
+      Size (Pixels): 5
+      Color: 255; 60; 60
+      Enabled: true
+    # Real /terrain/elevation (Float32MultiArray, Bayesian-fused per-cell
+    # height from elevation_grid_node) re-published as a PointCloud2 by
+    # matrix_dashboard/elevation_cloud_bridge for RViz -- values are not
+    # invented, only reshaped for display. See acceptance report.
+    - Class: rviz_default_plugins/PointCloud2
+      Name: TerrainElevation
+      Topic:
+        Value: /terrain/elevation_cloud
+      Style: Points
+      Size (Pixels): 6
+      Color Transformer: AxisColor
+      Axis: Z
+      Enabled: true
+    # KNOWN LIMITATION: RViz's OccupancyGrid (Map) display hits a
+    # WSLg/Mesa GLSL shader compatibility bug in this environment
+    # (rviz/glsl120/indexed_8bit_image: "active samplers with a different
+    # type refer to the same texture image unit"). Left configured for a
+    # non-WSLg machine; /terrain/costmap is verified independently via
+    # ROS and the dashboard (http://localhost:8088) instead of trusting
+    # this panel. Not disabled -- left visible so the failure (if any) is
+    # observable, not hidden.
+    - Class: rviz_default_plugins/Map
+      Name: TerrainCostmap
+      Topic:
+        Value: /terrain/costmap
+      Color Scheme: map
+      Alpha: 0.8
+      Enabled: true
+    - Class: rviz_default_plugins/Image
+      Name: CameraLeft
+      Topic:
+        Value: /camera/left/image_raw
+      Enabled: true
+    - Class: rviz_default_plugins/Image
+      Name: CameraRight
+      Topic:
+        Value: /camera/right/image_raw
+      Enabled: true
+    # Member-2's real stereo depth (Z=fB/d from live camera images/
+    # calibration, matrix_perception/depth_node.cpp), 32FC1.
+    - Class: rviz_default_plugins/Image
+      Name: Depth
+      Topic:
+        Value: /perception/depth
+      Enabled: true
+    - Class: rviz_default_plugins/Image
+      Name: SemanticClassMap
+      Topic:
+        Value: /semantic/class_map
+      Enabled: false
+    # Member-4a Hybrid A* receding-horizon local plan (real, replanned
+    # against the live costmap every cycle; base_link frame).
+    - Class: rviz_default_plugins/Path
+      Name: GlobalPlan
+      Topic:
+        Value: /plan
+      Color: 40; 220; 120
+      Line Style: Lines
+      Line Width: 0.05
+      Enabled: true
+  Global Options:
+    Fixed Frame: odom
+    Background Color: 20; 24; 28
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 8
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Pitch: 0.6
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 900
+  Width: 1600
+  CameraLeft:
+    collapsed: false
+  CameraRight:
+    collapsed: false
+  Depth:
+    collapsed: false

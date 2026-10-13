@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+"""ros2 run entry point for ugv_sim.goal_navigator (legacy/superseded by
+Member 4's navigation_node; kept as-is, not part of the Member 1 C++
+migration). See scripts/navigation_node's docstring for why this wrapper
+exists instead of setup.py console_scripts."""
+from ugv_sim.goal_navigator import main
+
+if __name__ == '__main__':
+    main()

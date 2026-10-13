@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""ros2 run entry point for ugv_sim.navigation.navigation_node (Member 4,
+untouched by the Member 1 C++ migration). ament_cmake_python installs the
+ugv_sim Python package unchanged; this thin wrapper preserves the same
+`ros2 run ugv_sim navigation_node` invocation that ament_python's
+console_scripts previously provided, without needing setup.py."""
+from ugv_sim.navigation.navigation_node import main
+
+if __name__ == '__main__':
+    main()

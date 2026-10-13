@@ -1,0 +1,26 @@
+# Extra Python packages needed on top of a sourced ROS 2 Jazzy install.
+#
+# Setup:
+#   source /opt/ros/jazzy/setup.bash
+#   python3 -m venv ~/matrix_torch_venv --system-site-packages
+#   source ~/matrix_torch_venv/bin/activate
+#   pip install -r requirements.txt
+#
+# --system-site-packages lets rclpy/cv_bridge/etc. resolve from the apt-
+# installed ROS 2 Jazzy packages instead of needing to be pip-installed too.
+
+# --- required at runtime by matrix_semantic (semantic_node.py) ---
+numpy==1.26.4
+onnxruntime==1.30.0
+opencv-python-headless==4.9.0.80
+
+# --- optional: enables the dashboard's live camera JPEG preview
+#     (matrix_dashboard degrades gracefully without it) ---
+pillow==12.3.0
+
+# --- optional: only needed to retrain/re-export the PIDNet model from
+#     external/matrix_upstream/PIDNet; NOT required to run the live system
+#     (semantic_node.py runs inference via onnxruntime on the already-
+#     exported models/model.onnx, no torch import) ---
+# torch==2.14.0+cpu
+# torchvision==0.29.0+cpu

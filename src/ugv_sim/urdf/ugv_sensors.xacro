@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+       name="ugv_sensors">
+
+  <!-- =========================
+       3D LIDAR
+       ========================= -->
+
+  <link name="lidar_link">
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <!-- Raised from original 0.48 by 0.15 m; chassis was raised 0.15 m
+         (see chassis_mount_z in ugv.urdf.xacro) for ground clearance,
+         sensor mounts shift with it to stay at the same height relative
+         to the chassis body they're bolted to. -->
+    <origin xyz="0 0 0.63" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>lidar</topic>
+      <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>16</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.2618</min_angle>
+            <max_angle>0.2618</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>0.1</min>
+          <max>30.0</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- =========================
+       IMU
+       ========================= -->
+
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.41" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+      <topic>imu/data</topic>
+      <update_rate>100</update_rate>
+      <always_on>true</always_on>
+    </sensor>
+  </gazebo>
+
+  <!-- =========================
+       STEREO CAMERA
+       ========================= -->
+
+  <xacro:macro name="stereo_camera_link" params="name y">
+    <link name="${name}">
+      <inertial>
+        <mass value="0.05"/>
+        <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001"/>
+      </inertial>
+      <visual>
+        <geometry><box size="0.03 0.03 0.03"/></geometry>
+        <material name="dark"/>
+      </visual>
+    </link>
+
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}"/>
+      <origin xyz="0.42 ${y} 0.45" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:stereo_camera_link name="camera_left_link" y="0.06"/>
+  <xacro:stereo_camera_link name="camera_right_link" y="-0.06"/>
+
+  <gazebo reference="camera_left_link">
+    <sensor name="camera_left" type="camera">
+      <topic>camera/left/image_raw</topic>
+      <update_rate>15</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>50</far>
+        </clip>
+      </camera>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="camera_right_link">
+    <sensor name="camera_right" type="camera">
+      <topic>camera/right/image_raw</topic>
+      <update_rate>15</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>50</far>
+        </clip>
+      </camera>
+    </sensor>
+  </gazebo>
+
+</robot>

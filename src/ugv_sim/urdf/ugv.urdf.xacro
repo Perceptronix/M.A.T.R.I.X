@@ -1,0 +1,225 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+       name="ugv">
+
+  <!-- =========================
+       PARAMETERS
+       ========================= -->
+
+  <xacro:property name="chassis_length" value="0.80"/>
+  <xacro:property name="chassis_width"  value="0.60"/>
+  <xacro:property name="chassis_height" value="0.20"/>
+
+  <!-- Tried raising to 0.22 for step-climbing geometry; measured result
+       was worse, not better; combined with the raised chassis (higher
+       overall COM), the vehicle tumbled uncontrolled on the boulder
+       terrain even with zero /cmd_vel commanded (true roll/pitch/yaw
+       changed on their own between samples). Reverted to the original
+       0.16, this specific fix failed measurement and was rolled back
+       per the change/test/keep-or-revert rule. -->
+  <xacro:property name="wheel_radius" value="0.16"/>
+  <xacro:property name="wheel_width"  value="0.10"/>
+
+  <!-- =========================
+       MATERIALS
+       ========================= -->
+
+  <material name="dark">
+    <color rgba="0.15 0.15 0.15 1"/>
+  </material>
+
+  <material name="wheel">
+    <color rgba="0.05 0.05 0.05 1"/>
+  </material>
+
+  <!-- =========================
+       BASE LINK
+       ========================= -->
+
+  <!-- Chassis mount height above the wheel-axle reference plane. Originally
+       0.25 (box bottom at 0.15 m above ground, less than the wheel
+       radius itself, 0.16 m). Measured directly on Rubicon terrain, driving
+       forward from spawn in every tested heading, the vehicle's own
+       wheel-odometry (dead reckoning, not just true pose) advanced almost
+       nothing (well under 0.15 m net over 3-5 s of commanded 0.25-0.3 m/s)
+       while pitch climbed to about -42 degrees and plateaued; the wheels
+       themselves were not turning freely, consistent with the chassis belly
+       high-centering on rock features immediately near spawn rather than
+       genuine wheel-terrain engagement. Raised to 0.40 (belly clearance
+       0.30 m), comparable to a real rock-crawling vehicle, to test
+       whether inadequate ground clearance, not terrain difficulty itself,
+       was the blocker. Terrain geometry is untouched; only this vehicle
+       parameter changed. -->
+  <xacro:property name="chassis_mount_z" value="0.40"/>
+
+  <link name="base_link">
+
+    <visual>
+      <origin xyz="0 0 ${chassis_mount_z}"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 ${chassis_mount_z}"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 ${chassis_mount_z}"/>
+      <!-- Reduced from 35.0. Friction increase (1.5 -> 2.5) alone did not
+           change the stuck-at-spawn outcome, and odometry shows the
+           wheel's own rotation (not just true position) stays suppressed
+           under load, which is a torque/load symptom rather than a
+           traction one (gz-sim-diff-drive-system exposes no torque/gain
+           parameter), so the available lever is reducing the load itself.
+           35 kg chassis + 4x5 kg wheels = 55 kg total was heavy for a
+           0.8 m platform; halved here (inertia scaled to match). -->
+      <mass value="18.0"/>
+      <inertia
+        ixx="1.03"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="1.54"
+        iyz="0.0"
+        izz="2.06"/>
+    </inertial>
+
+  </link>
+
+  <!-- =========================
+       WHEEL MACRO
+       ========================= -->
+
+  <xacro:macro name="wheel" params="name x y">
+
+    <link name="${name}">
+
+      <visual>
+        <origin rpy="1.5708 0 0"/>
+        <geometry>
+          <cylinder
+            radius="${wheel_radius}"
+            length="${wheel_width}"/>
+        </geometry>
+        <material name="wheel"/>
+      </visual>
+
+      <collision>
+        <origin rpy="1.5708 0 0"/>
+        <geometry>
+          <cylinder
+            radius="${wheel_radius}"
+            length="${wheel_width}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass value="3.0"/>
+        <inertia
+          ixx="0.03"
+          ixy="0.0"
+          ixz="0.0"
+          iyy="0.03"
+          iyz="0.0"
+          izz="0.03"/>
+      </inertial>
+
+    </link>
+
+    <joint name="${name}_joint"
+           type="continuous">
+
+      <parent link="base_link"/>
+      <child link="${name}"/>
+
+      <origin
+        xyz="${x} ${y} ${wheel_radius}"
+        rpy="0 0 0"/>
+
+      <axis xyz="0 1 0"/>
+
+    </joint>
+
+  </xacro:macro>
+
+  <!-- =========================
+       FOUR WHEELS
+       ========================= -->
+
+  <xacro:wheel
+    name="front_left_wheel"
+    x="0.28"
+    y="0.35"/>
+
+  <xacro:wheel
+    name="front_right_wheel"
+    x="0.28"
+    y="-0.35"/>
+
+  <xacro:wheel
+    name="rear_left_wheel"
+    x="-0.28"
+    y="0.35"/>
+
+  <xacro:wheel
+    name="rear_right_wheel"
+    x="-0.28"
+    y="-0.35"/>
+
+  <!-- =========================
+       ROS 2 CONTROL / GAZEBO
+       ========================= -->
+
+  <gazebo reference="base_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+
+  <gazebo reference="front_left_wheel">
+    <!-- Raised from 1.5; wheel odometry under-shot commanded velocity
+         heavily under load while climbing Rubicon's rock faces (e.g.
+         ~0.08 m of true/odom advance for a commanded 0.3 m/s x 3 s),
+         consistent with the wheel losing traction against the rock
+         surface rather than only a geometry/clearance problem. -->
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+  </gazebo>
+
+  <gazebo reference="front_right_wheel">
+    <!-- Raised from 1.5; wheel odometry under-shot commanded velocity
+         heavily under load while climbing Rubicon's rock faces (e.g.
+         ~0.08 m of true/odom advance for a commanded 0.3 m/s x 3 s),
+         consistent with the wheel losing traction against the rock
+         surface rather than only a geometry/clearance problem. -->
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+  </gazebo>
+
+  <gazebo reference="rear_left_wheel">
+    <!-- Raised from 1.5; wheel odometry under-shot commanded velocity
+         heavily under load while climbing Rubicon's rock faces (e.g.
+         ~0.08 m of true/odom advance for a commanded 0.3 m/s x 3 s),
+         consistent with the wheel losing traction against the rock
+         surface rather than only a geometry/clearance problem. -->
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+  </gazebo>
+
+  <gazebo reference="rear_right_wheel">
+    <!-- Raised from 1.5; wheel odometry under-shot commanded velocity
+         heavily under load while climbing Rubicon's rock faces (e.g.
+         ~0.08 m of true/odom advance for a commanded 0.3 m/s x 3 s),
+         consistent with the wheel losing traction against the rock
+         surface rather than only a geometry/clearance problem. -->
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+  </gazebo>
+  <xacro:include filename="$(find ugv_sim)/urdf/ugv_gazebo.xacro"/>
+  <xacro:include filename="$(find ugv_sim)/urdf/ugv_sensors.xacro"/>
+</robot>

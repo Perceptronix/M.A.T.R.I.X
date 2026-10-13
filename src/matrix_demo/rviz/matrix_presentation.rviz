@@ -1,0 +1,115 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Color: 80; 80; 80
+      Cell Size: 1
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Show Names: false
+      Show Axes: true
+      Marker Scale: 0.4
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Description Topic:
+        Value: /robot_description
+      Enabled: true
+    # Real 360-degree 3D LiDAR (Member-1, gz-bridged, /lidar/points) --
+    # published Best Effort, must match here or RViz silently shows nothing.
+    - Class: rviz_default_plugins/PointCloud2
+      Name: LiDAR
+      Topic:
+        Value: /lidar/points
+        Reliability Policy: Best Effort
+        Depth: 5
+      Style: Flat Squares
+      Size (Pixels): 3
+      Color Transformer: AxisColor
+      Axis: Z
+      Enabled: true
+    # Real classified non-ground / obstacle points (Member-2,
+    # ground_plane_node, RANSAC-plane-residual classification of the real
+    # stereo point cloud) -- also Best Effort.
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Obstacles
+      Topic:
+        Value: /perception/obstacles
+        Reliability Policy: Best Effort
+        Depth: 5
+      Style: Spheres
+      Size (Pixels): 6
+      Color Transformer: FlatColor
+      Color: 255; 60; 60
+      Enabled: true
+    # Real Bayesian-fused per-cell terrain elevation (Member-2,
+    # elevation_grid_node), reshaped into a PointCloud2 purely for display
+    # by matrix_dashboard/elevation_cloud_bridge -- values are not
+    # invented, only reshaped. Colored by height so terrain structure
+    # (slope/bumps) is visually obvious.
+    - Class: rviz_default_plugins/PointCloud2
+      Name: TerrainElevation
+      Topic:
+        Value: /terrain/elevation_cloud
+        Reliability Policy: Reliable
+        Depth: 5
+      Style: Flat Squares
+      Size (Pixels): 5
+      Color Transformer: AxisColor
+      Axis: Z
+      Use Fixed Frame: true
+      Enabled: true
+    # Real left stereo camera feed (Member-1 sensor, live).
+    - Class: rviz_default_plugins/Image
+      Name: CameraLeft
+      Topic:
+        Value: /camera/left/image_raw
+        Reliability Policy: Best Effort
+      Enabled: true
+    # Autonomy layer outputs -- only meaningful once matrix_navigation is
+    # launched; harmless (just empty) if it is not part of this run.
+    - Class: rviz_default_plugins/Path
+      Name: GlobalPlan
+      Topic:
+        Value: /plan
+        Reliability Policy: Reliable
+      Color: 40; 220; 120
+      Line Style: Lines
+      Line Width: 0.06
+      Enabled: true
+    # Real mission goal (the same goal_x/goal_y hybrid_astar_node
+    # navigates toward), drawn as a flag+ring+label so a viewer can see
+    # where the UGV is actually heading -- presentation aid only, reads
+    # no sensor data, writes nothing to /cmd_vel.
+    - Class: rviz_default_plugins/Marker
+      Name: GoalMarker
+      Topic:
+        Value: /mission/goal_marker
+        Reliability Policy: Reliable
+      Enabled: true
+  Global Options:
+    Fixed Frame: odom
+    Background Color: 18; 20; 24
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 7
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0.5
+      Pitch: 0.5
+      Yaw: 0.8
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1000
+  Width: 1700
+  CameraLeft:
+    collapsed: false
